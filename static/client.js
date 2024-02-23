@@ -2,15 +2,19 @@ let pc; // Переменная для хранения объекта RTCPeerCo
 
 function negotiate() {
     return pc.createOffer().then((offer) => {
+        console.log("Created offer:", offer);
         return pc.setLocalDescription(offer);
     }).then(() => {
+        console.log("Local description set:", pc.localDescription);
         return new Promise((resolve) => {
             if (pc.iceGatheringState === 'complete') {
+                console.log("ICE gathering state is complete.");
                 resolve();
             } else {
                 const checkState = () => {
                     if (pc.iceGatheringState === 'complete') {
                         pc.removeEventListener('icegatheringstatechange', checkState);
+                        console.log("ICE gathering state is complete.");
                         resolve();
                     }
                 };
@@ -19,7 +23,7 @@ function negotiate() {
         });
     }).then(() => {
         var offer = pc.localDescription;
-        console.log(offer);
+        console.log("Sending offer to server:", offer);
 
         return fetch('/offer', {
             body: JSON.stringify({
@@ -32,13 +36,17 @@ function negotiate() {
             method: 'POST'
         });
     }).then((response) => {
+        console.log("Received response from server:", response);
         return response.json();
     }).then((answer) => {
+        console.log("Received answer from server:", answer);
         return pc.setRemoteDescription(answer).then(() => {
+            console.log("Remote description set successfully.");
             // Обновляем переменную repetitions_count при получении ответа от сервера
             document.getElementById('repetitions_count').innerText = answer.repetitions_count;
         });
     }).catch((e) => {
+        console.error("Error:", e);
         alert(e);
     });
 }
@@ -55,6 +63,7 @@ function start() {
     pc = new RTCPeerConnection(config);
 
     pc.ontrack = (evt) => {
+        console.log("Track received:", evt);
         if (evt.track.kind === 'video') {
             const stream = evt.streams[0];
             const track = stream.getVideoTracks()[0];
@@ -66,6 +75,7 @@ function start() {
 
             track.applyConstraints(constraints)
                 .then(() => {
+                    console.log("Constraints applied successfully.");
                     document.getElementById('video').srcObject = stream;
                 })
                 .catch((error) => {
@@ -85,6 +95,7 @@ function start() {
     const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws');
     ws.onmessage = function (event) {
         const data = JSON.parse(event.data);
+        console.log("Received message from server:", data);
         if (data.repetitions_count !== undefined) {
             // Обновляем переменную repetitions_count при получении сообщения от сервера
             document.getElementById('repetitions_count').innerText = data.repetitions_count;
@@ -92,6 +103,7 @@ function start() {
     };
 
     navigator.mediaDevices.getUserMedia({video: true, audio: true}).then((stream) => {
+        console.log("Got media stream:", stream);
         document.getElementById('localVideo').srcObject = stream;
 
         stream.getTracks().forEach((track) => {
