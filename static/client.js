@@ -39,6 +39,7 @@ function negotiate() {
         console.log("Received response from server:", response);
         return response.json();
     }).then((answer) => {
+        answer.repetitions_count = undefined;
         console.log("Received answer from server:", answer);
         return pc.setRemoteDescription(answer).then(() => {
             console.log("Remote description set successfully.");
